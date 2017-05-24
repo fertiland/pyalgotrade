@@ -22,6 +22,7 @@
 import urllib2
 import os
 import datetime
+import pandas as pd
 
 import pyalgotrade.logger
 from pyalgotrade import bar
@@ -73,6 +74,14 @@ def download_current_trade(instrument, storage):
         f.write(title)
         f.write(bars)
         f.close()
+    
+    yahooFileName = os.path.join(storage, "%s-%s-yahoofinance.csv"%(instrument, dateStr[0:4]))
+    if os.path.exists(yahooFileName) and os.path.exists(fileName):
+        sinaDf = pd.read_csv(fileName)
+        yahooDf = pd.read_csv(yahooFileName)
+        resultDf = pd.concat([sinaDf, yahooDf])
+        resultDf = resultDf.drop_duplicates(['Date'])
+        resultDf.to_csv(yahooFileName+".sina", index=False)
 
     return fileName
 
@@ -123,4 +132,5 @@ def build_feed(instruments, storage, frequency=bar.Frequency.DAY, timezone=None,
 
     return ret
 
-#build_feed(['600036.ss'], '.')
+print "hello"
+build_feed(['601618.ss'], '.')
