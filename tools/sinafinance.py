@@ -132,5 +132,4 @@ def build_feed(instruments, storage, frequency=bar.Frequency.DAY, timezone=None,
 
     return ret
 
-print "hello"
-build_feed(['601618.ss'], '.')
+#build_feed(['601618.ss'], '.')
