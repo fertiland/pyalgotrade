@@ -20,11 +20,13 @@
 
 import os
 import datetime
+import time
 import requests
 import random
 from retrying import retry
 import pandas as pd
 import numpy as np
+import ConfigParser
 
 import pyalgotrade.logger
 from pyalgotrade import bar
@@ -106,7 +108,22 @@ def download_weekly_bars(instrument, year, csvFile):
     f.close()
 
 
-def build_feed(instruments, fromYear, toYear, storage, frequency=bar.Frequency.DAY, timezone=None, skipErrors=False):
+def is_working_hour():
+    tm_hour = int(time.strftime('%H', time.localtime()))
+    weekdayNumber = datetime.datetime.today().weekday()
+    if ( weekdayNumber >= 0 and weekdayNumber <= 4) and (tm_hour >= 9 and tm_hour <= 15 ):
+        return True
+    else:
+        return False
+
+def is_download_data_enabled():
+    config = ConfigParser.ConfigParser()
+    config.read("/home/qipingli/stock/python/stock.ini")
+    downloadEnabled = config.getboolean('feature', 'enable_download_data')
+    return downloadEnabled
+
+
+def build_feed(instruments, fromYear, toYear, storage, frequency=bar.Frequency.DAY, timezone=None, skipErrors=False, toYearOnly=True):
     """Build and load a :class:`pyalgotrade.barfeed.yahoofeed.Feed` using CSV files downloaded from Yahoo! Finance.
     CSV files are downloaded if they haven't been downloaded before.
 
@@ -137,7 +154,7 @@ def build_feed(instruments, fromYear, toYear, storage, frequency=bar.Frequency.D
     for year in range(fromYear, toYear+1):
         for instrument in instruments:
             fileName = os.path.join(storage, "%s-%d-yahoofinance.csv" % (instrument, year))
-            if not os.path.exists(fileName):
+            if (not os.path.exists(fileName)) and is_working_hour() and is_download_data_enabled():
                 logger.info("Downloading %s %d to %s" % (instrument, year, fileName))
                 try:
                     if frequency == bar.Frequency.DAY:
@@ -152,5 +169,6 @@ def build_feed(instruments, fromYear, toYear, storage, frequency=bar.Frequency.D
                         continue
                     else:
                         raise e
-            ret.addBarsFromCSV(instrument, fileName)
+            if os.path.exists(fileName):
+                ret.addBarsFromCSV(instrument, fileName)
     return ret
