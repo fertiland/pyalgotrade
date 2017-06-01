@@ -21,7 +21,7 @@
 
 import urllib2
 import os
-import datetime
+from datetime import datetime
 import pandas as pd
 
 import pyalgotrade.logger
@@ -38,33 +38,37 @@ def __adjust_month(month):
 
 
 def download_current_trade(instrument, storage):
-    fileName=""
-    sinaInstru = ""
+
     if instrument.find("ss") > 0:
         sinaInstru="sh"+instrument[0:6]
     elif instrument.find("sz") > 0:
         sinaInstru="sz"+instrument[0:6]
     url = "http://hq.sinajs.cn/list=%s" % (sinaInstru)
     #print url
-
-    f = urllib2.urlopen(url)
-    #if f.headers['Content-Type'] != 'text/csv':
-    #    raise Exception("Failed to download data: %s" % f.getcode())
-    instruInfo = f.readline()
-    #print instruInfo
-    instruList=instruInfo.split(',')
-    dateStr = instruList[30]
-    openStr = instruList[1]
-    highStr = instruList[4]
-    lowStr = instruList[5]
-    closeStr = instruList[3]
-    volumeStr = instruList[8]
-    currStr = instruList[3]
-
-    title = "Date,Open,High,Low,Close,Volume,Adj Close\n"
-    bars = "%s,%s,%s,%s,%s,%s,%s\n" %(dateStr, openStr, highStr, lowStr, closeStr, volumeStr, currStr)
     
+    now = datetime.now()
+    dateStr = now.strftime('%Y-%m-%d')
     fileName = os.path.join(storage, "%s-%s-sinafinance.csv"%(instrument, dateStr))
+
+    if not os.path.exists(fileName):
+        f = urllib2.urlopen(url)
+        #if f.headers['Content-Type'] != 'text/csv':
+        #    raise Exception("Failed to download data: %s" % f.getcode())
+        instruInfo = f.readline()
+        print instruInfo
+        instruList=instruInfo.split(',')
+        dateStr = instruList[30]
+        openStr = instruList[1]
+        highStr = instruList[4]
+        lowStr = instruList[5]
+        closeStr = instruList[3]
+        volumeStr = instruList[8]
+        currStr = instruList[3]
+
+        title = "Date,Open,High,Low,Close,Volume,Adj Close\n"
+        bars = "%s,%s,%s,%s,%s,%s,%s\n" %(dateStr, openStr, highStr, lowStr, closeStr, volumeStr, currStr)
+        fileName = os.path.join(storage, "%s-%s-sinafinance.csv"%(instrument, dateStr))
+    
 
     #print title
     #print fileName
@@ -74,9 +78,10 @@ def download_current_trade(instrument, storage):
         f.write(title)
         f.write(bars)
         f.close()
+        isUpdated = True
     
     yahooFileName = os.path.join(storage, "%s-%s-yahoofinance.csv"%(instrument, dateStr[0:4]))
-    if os.path.exists(yahooFileName) and os.path.exists(fileName):
+    if os.path.exists(yahooFileName) and os.path.exists(fileName) and isUpdated:
         sinaDf = pd.read_csv(fileName)
         yahooDf = pd.read_csv(yahooFileName)
         resultDf = pd.concat([sinaDf, yahooDf])
