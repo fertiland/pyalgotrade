@@ -68,7 +68,7 @@ def download_current_trade(instrument, storage):
 
     #print title
     #print fileName
-    if not os.path.exists(fileName):
+    if not os.path.exists(fileName) and (float(volumeStr) > 1):
         #logger.info("Downloading %s %s to %s" % (instrument, dateStr, fileName))
         f = open(fileName, "w")
         f.write(title)
@@ -132,4 +132,5 @@ def build_feed(instruments, storage, frequency=bar.Frequency.DAY, timezone=None,
 
     return ret
 
+#print "hello"
 #build_feed(['601618.ss'], '.')
